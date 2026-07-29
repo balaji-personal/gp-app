@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { Colors } from '../theme/colors';
 import { useApp } from '../context/AppContext';
 import { BottomNav } from '../components/BottomNav';
-import { ClipboardEdit, ClipboardList, User, MapPin } from 'lucide-react-native';
+import { ClipboardEdit, ClipboardList, User, MapPin, Globe } from 'lucide-react-native';
 
 export const HomeScreen: React.FC = () => {
-  const { navigate, userSession, t } = useApp();
+  const { navigate, userSession, t, lang, setLang } = useApp();
 
   const name = userSession?.fullName || 'Balaji';
   const village = userSession?.village ? `${userSession.village} Gram Panchayat` : 'Machnoor Gram Panchayat';
@@ -21,9 +21,19 @@ export const HomeScreen: React.FC = () => {
               <Text style={styles.greetingText}>{t('hello')},</Text>
               <Text style={styles.userName}>{name} 👋</Text>
             </View>
-            <TouchableOpacity style={styles.avatarBtn} onPress={() => navigate('PROFILE')}>
-              <Text style={styles.avatarText}>{name.charAt(0)}</Text>
-            </TouchableOpacity>
+            <View style={styles.topRightRow}>
+              <TouchableOpacity
+                style={styles.langToggle}
+                onPress={() => setLang(lang === 'en' ? 'te' : 'en')}
+                activeOpacity={0.8}
+              >
+                <Globe size={14} color="#FFFFFF" />
+                <Text style={styles.langToggleText}>{lang === 'en' ? 'తెలుగు' : 'English'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.avatarBtn} onPress={() => navigate('PROFILE')}>
+                <Text style={styles.avatarText}>{name.charAt(0)}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.locationPill}>
@@ -44,7 +54,7 @@ export const HomeScreen: React.FC = () => {
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>{t('registerComplaintBtn')}</Text>
-              <Text style={styles.cardSub}>Report a new problem</Text>
+              <Text style={styles.cardSub}>{lang === 'te' ? 'కొత్త సమస్యను నివేదించండి' : 'Report a new problem'}</Text>
             </View>
           </TouchableOpacity>
 
@@ -120,6 +130,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     marginTop: 2,
+  },
+  topRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  langToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  langToggleText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 4,
   },
   avatarBtn: {
     width: 48,

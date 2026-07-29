@@ -1,21 +1,104 @@
 import { Platform } from 'react-native';
 
-const API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000/api' : 'http://localhost:3000/api';
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  (Platform.OS === 'android' ? 'http://10.0.2.2:5000/api' : 'http://localhost:5000/api');
+
+console.log('[API Base URL]:', API_BASE_URL);
+
+// Helper to safely parse JSON response or throw meaningful error
+async function parseResponse(res: Response, endpointName: string) {
+  const contentType = res.headers.get('content-type') || '';
+  if (!res.ok) {
+    let errorMsg = `HTTP ${res.status} ${res.statusText}`;
+    if (contentType.includes('application/json')) {
+      try {
+        const errJson = await res.json();
+        errorMsg = errJson.error || errJson.message || errorMsg;
+      } catch {}
+    } else {
+      const text = await res.text();
+      console.warn(`[API ${endpointName}] Non-JSON error response (${res.status}):`, text.slice(0, 150));
+    }
+    throw new Error(errorMsg);
+  }
+
+  if (contentType.includes('application/json')) {
+    return await res.json();
+  }
+  throw new Error(`Expected JSON from ${endpointName} but got ${contentType}`);
+}
+
+// ─── Locations ────────────────────────────────────────────────────────────────
+
+export async function fetchDistrictsApi() {
+  const url = `${API_BASE_URL}/locations/districts`;
+  try {
+    console.log('[API] Fetching districts from:', url);
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`[API districts] Returned HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? data : data?.data || data?.districts || [];
+  } catch (err) {
+    console.warn('[API districts] fetch failed:', err);
+    return [];
+  }
+}
+
+export async function fetchMandalsApi(districtId: number) {
+  const url = `${API_BASE_URL}/locations/mandals?districtId=${districtId || 1}`;
+  try {
+    console.log('[API] Fetching mandals from:', url);
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`[API mandals] Returned HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? data : data?.data || data?.mandals || [];
+  } catch (err) {
+    console.warn('[API mandals] fetch failed:', err);
+    return [];
+  }
+}
+
+export async function fetchGramPanchayatsApi(mandalId: number) {
+  // Backend route is /locations/gps as defined in locations.ts
+  let url = `${API_BASE_URL}/locations/gps?mandalId=${mandalId || 1}`;
+  try {
+    console.log('[API] Fetching gram panchayats from:', url);
+    let res = await fetch(url);
+    if (!res.ok && res.status === 404) {
+      url = `${API_BASE_URL}/locations/gram-panchayats?mandalId=${mandalId || 1}`;
+      res = await fetch(url);
+    }
+    if (!res.ok) {
+      console.warn(`[API gram panchayats] Returned HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? data : data?.data || data?.gramPanchayats || [];
+  } catch (err) {
+    console.warn('[API gram panchayats] fetch failed:', err);
+    return [];
+  }
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export async function loginUserApi(phone: string, pin: string) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, pin }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || 'Login failed');
-    return data;
-  } catch (err) {
-    console.warn('API login offline or failed:', err);
-    return null;
-  }
+  const url = `${API_BASE_URL}/auth/login`;
+  console.log('[API] Logging in to:', url, { phone });
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, pin }),
+  });
+  const data = await parseResponse(res, 'login');
+  return data; // { success: true, token, user }
 }
 
 export async function registerUserApi(userData: {
@@ -24,78 +107,111 @@ export async function registerUserApi(userData: {
   mothersName?: string;
   phone: string;
   pin: string;
-  districtId?: number;
-  mandalId?: number;
-  gramPanchayatId?: number;
+  districtId: number;
+  mandalId: number;
+  gramPanchayatId: number;
 }) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fullName: userData.fullName,
-        fathersName: userData.fathersName || 'N/A',
-        mothersName: userData.mothersName || 'N/A',
-        phone: userData.phone,
-        pin: userData.pin,
-        districtId: userData.districtId || 1,
-        mandalId: userData.mandalId || 1,
-        gramPanchayatId: userData.gramPanchayatId || 1,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || 'Registration failed');
-    return data;
-  } catch (err) {
-    console.warn('API registration offline or failed:', err);
-    return null;
-  }
+  const url = `${API_BASE_URL}/auth/register`;
+  console.log('[API] Registering villager to:', url, userData);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fullName: userData.fullName,
+      fathersName: userData.fathersName || 'N/A',
+      mothersName: userData.mothersName || 'N/A',
+      phone: userData.phone,
+      pin: userData.pin,
+      districtId: Number(userData.districtId),
+      mandalId: Number(userData.mandalId),
+      gramPanchayatId: Number(userData.gramPanchayatId),
+    }),
+  });
+  const data = await parseResponse(res, 'register');
+  return data; // { success: true, token, user }
 }
+
+// ─── Complaints ───────────────────────────────────────────────────────────────
 
 export async function createComplaintApi(complaintData: {
   category: string;
   description: string;
   token?: string;
 }) {
+  const url = `${API_BASE_URL}/complaints/register`;
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (complaintData.token) headers['Authorization'] = `Bearer ${complaintData.token}`;
-    const res = await fetch(`${API_BASE_URL}/complaints/register`, {
+
+    let catKey = complaintData.category.toUpperCase();
+    if (catKey.includes('WATER')) catKey = 'WATER';
+    else if (catKey.includes('ROAD')) catKey = 'ROADS';
+    else if (catKey.includes('LAND')) catKey = 'LAND';
+    else if (catKey.includes('GOVT')) catKey = 'GOVT';
+    else if (catKey.includes('SANITATION')) catKey = 'SANITATION';
+    else catKey = 'OTHER';
+
+    console.log('[API] Creating complaint at:', url, { category: catKey });
+    const res = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        category: complaintData.category,
+        category: catKey,
         description: complaintData.description,
       }),
     });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error('Failed to create complaint');
+    const data = await parseResponse(res, 'createComplaint');
     return data;
   } catch (err) {
-    console.warn('API create complaint offline or failed:', err);
+    console.warn('[API create complaint] failed (offline fallback):', err);
     return null;
   }
 }
 
 export async function fetchMyComplaintsApi(token?: string) {
+  const url = `${API_BASE_URL}/complaints/my-complaints`;
   try {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE_URL}/complaints/my-complaints`, { headers });
+    console.log('[API] Fetching my complaints from:', url);
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
     const data = await res.json();
-    if (!res.ok || !data.success) throw new Error('Failed to fetch complaints');
     return data;
   } catch (err) {
-    console.warn('API my complaints offline or failed:', err);
+    console.warn('[API my complaints] failed (offline fallback):', err);
     return null;
   }
 }
 
-export async function updateComplaintStatusApi(complaintId: string | number, newStatus: string, remarks?: string, token?: string) {
+export async function fetchAllComplaintsApi(token?: string) {
+  const url = `${API_BASE_URL}/sarpanch/complaints`;
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    console.log('[API] Fetching all complaints from:', url);
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.warn('[API all complaints] failed (offline fallback):', err);
+    return null;
+  }
+}
+
+export async function updateComplaintStatusApi(
+  complaintId: string | number,
+  newStatus: string,
+  remarks?: string,
+  token?: string,
+) {
+  const url = `${API_BASE_URL}/sarpanch/complaints/${complaintId}/status`;
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE_URL}/sarpanch/complaints/${complaintId}/status`, {
+    console.log('[API] Updating complaint status at:', url);
+    const res = await fetch(url, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
@@ -103,11 +219,11 @@ export async function updateComplaintStatusApi(complaintId: string | number, new
         remarks,
       }),
     });
+    if (!res.ok) return null;
     const data = await res.json();
-    if (!res.ok || !data.success) throw new Error('Failed to update complaint status');
     return data;
   } catch (err) {
-    console.warn('API update complaint status offline or failed:', err);
+    console.warn('[API update status] failed (offline fallback):', err);
     return null;
   }
 }

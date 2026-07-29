@@ -5,33 +5,45 @@ import { Globe } from 'lucide-react-native';
 import { useApp } from '../context/AppContext';
 
 export const LanguageSelectorBanner: React.FC = () => {
-  const { lang, setLang, t } = useApp();
+  const { lang, setLang } = useApp();
 
   return (
     <View style={styles.bannerContainer}>
       <View style={styles.leftRow}>
-        <Globe size={22} color={Colors.secondaryDark} />
-        <View style={{ marginLeft: 10 }}>
-          <Text style={styles.bannerTitle}>{t('selectLanguage')}</Text>
-          <Text style={styles.bannerSub}>Choose app language / భాషను ఎంచుకోండి</Text>
+        <View style={styles.globeIconCircle}>
+          <Globe size={18} color="#EA580C" />
+        </View>
+        <View style={{ marginLeft: 8, flex: 1 }}>
+          <Text style={styles.bannerTitle}>
+            {lang === 'te' ? 'భాషను ఎంచుకోండి' : 'Select Language'}
+          </Text>
+          <Text style={styles.bannerSub}>
+            {lang === 'te' ? 'యాప్ భాష మార్చుకోండి' : 'Choose app language'}
+          </Text>
         </View>
       </View>
 
       <View style={styles.btnRow}>
+        {/* English button */}
         <TouchableOpacity
           style={[styles.langBtn, lang === 'en' && styles.langBtnActive]}
           onPress={() => setLang('en')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.langBtnText, lang === 'en' && styles.langBtnTextActive]}>🇬🇧 EN</Text>
+          <Text style={[styles.langBtnText, lang === 'en' && styles.langBtnTextActive]}>
+            🇬🇧 English
+          </Text>
         </TouchableOpacity>
 
+        {/* Telugu button */}
         <TouchableOpacity
           style={[styles.langBtn, lang === 'te' && styles.langBtnActive]}
           onPress={() => setLang('te')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.langBtnText, lang === 'te' && styles.langBtnTextActive]}>🇮🇳 తెలుగు</Text>
+          <Text style={[styles.langBtnText, lang === 'te' && styles.langBtnTextActive]}>
+            🇮🇳 తెలుగు
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -40,53 +52,67 @@ export const LanguageSelectorBanner: React.FC = () => {
 
 const styles = StyleSheet.create({
   bannerContainer: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#FFFDF7',
     borderWidth: 1.5,
     borderColor: '#FED7AA',
     borderRadius: 18,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    elevation: 2,
+    elevation: 1,
+    shadowColor: '#EA580C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
   },
   leftRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  globeIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFEDD5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   bannerTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    color: Colors.textPrimary,
+    color: '#0F172A',
   },
   bannerSub: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: '#64748B',
     marginTop: 1,
   },
   btnRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F1F5F9',
     padding: 3,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
+    gap: 3,
   },
   langBtn: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 9,
+    paddingVertical: 5,
+    borderRadius: 11,
   },
   langBtnActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#15803D',
   },
   langBtnText: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: '#64748B',
   },
   langBtnTextActive: {
     color: '#FFFFFF',

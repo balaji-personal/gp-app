@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
       <View style={styles.headerRow}>
         {showBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.8}>
-            <ChevronLeft size={24} color="#FFFFFF" />
+            <ChevronLeft size={22} color="#FFFFFF" />
           </TouchableOpacity>
         )}
         <View style={styles.titleContainer}>
@@ -34,7 +34,6 @@ export const Header: React.FC<HeaderProps> = ({
           {stepText && <Text style={styles.headerStep}>{stepText}</Text>}
         </View>
 
-        {/* Language selector toggle button inside header */}
         <TouchableOpacity
           style={styles.langToggle}
           onPress={() => setLang(lang === 'en' ? 'te' : 'en')}
@@ -50,14 +49,14 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: Colors.primary,
-    paddingTop: 16,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    backgroundColor: '#15803D',
+    paddingTop: 18,
+    paddingBottom: 20,
+    paddingHorizontal: 18,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     elevation: 4,
-    shadowColor: Colors.primaryDark,
+    shadowColor: '#14532D',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -67,35 +66,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
   titleContainer: {
     flex: 1,
   },
   headerTitle: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   headerStep: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 12,
-    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 13,
+    fontWeight: '500',
     marginTop: 2,
   },
   langToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.35)',
   },
@@ -103,6 +103,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
-    marginLeft: 4,
+    marginLeft: 5,
   },
 });
