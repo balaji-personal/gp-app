@@ -9,7 +9,7 @@ export const HomeScreen: React.FC = () => {
   const { navigate, userSession, t, lang, setLang } = useApp();
 
   const name = userSession?.fullName || 'Balaji';
-  const village = userSession?.village ? `${userSession.village} Gram Panchayat` : 'Machnoor Gram Panchayat';
+  const village = userSession?.village ? `${userSession.village} Gram Panchayat` : 'Machnoor Grampanchayat';
 
   return (
     <View style={styles.container}>

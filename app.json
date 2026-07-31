@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "grampanchayat-app",
-    "slug": "grampanchayat-app",
+    "name": "Machnoor Grampanchayat",
+    "slug": "machnoor-grampanchayat",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/appicon.png",

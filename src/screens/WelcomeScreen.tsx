@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
-import { Colors } from '../theme/colors';
+import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, ImageStyle } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { LanguageSelectorBanner } from '../components/LanguageSelectorBanner';
 import { ClipboardEdit, LogIn } from 'lucide-react-native';
@@ -9,10 +8,15 @@ export const WelcomeScreen: React.FC = () => {
   const { navigate, isAuthenticated, userSession, t } = useApp();
 
   return (
-    <View style={styles.outerContainer}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ImageBackground
+      source={require('../../assets/wow.png')}
+      style={styles.outerContainer}
+      imageStyle={heroImageStyle}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
         {/* Language Selector Banner */}
-        <LanguageSelectorBanner />
+        <LanguageSelectorBanner overlay />
 
         {/* Center Header Content */}
         <View style={styles.headerSection}>
@@ -29,15 +33,6 @@ export const WelcomeScreen: React.FC = () => {
               </Text>
             </View>
           )}
-        </View>
-
-        {/* Hero Panchayat Meeting Image Card (Slightly Less Width) */}
-        <View style={styles.illustrationCard}>
-          <Image
-            source={require('../../assets/panchayat_office.png')}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
         </View>
 
         {/* Bottom Action Section */}
@@ -70,33 +65,44 @@ export const WelcomeScreen: React.FC = () => {
             </TouchableOpacity>
           )}
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ImageBackground>
   );
+};
+
+const heroImageStyle: ImageStyle = {
+  opacity: 1,
+  width: '150%',
+  alignSelf: 'flex-end',
+  objectPosition: 'right center',
 };
 
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#DDEBD7',
   },
   container: {
-    flexGrow: 1,
-    padding: 18,
+    flex: 1,
+    paddingHorizontal: 22,
+    paddingTop: 26,
+    paddingBottom: 22,
     justifyContent: 'space-between',
   },
   headerSection: {
     alignItems: 'center',
-    marginTop: 14,
+    marginTop: 0,
+    marginBottom: 230,
+    transform: [{ translateY: -42 }],
   },
   iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 108,
+    height: 108,
+    borderRadius: 34,
     backgroundColor: '#15803D',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
     elevation: 3,
     shadowColor: '#14532D',
     shadowOffset: { width: 0, height: 3 },
@@ -104,23 +110,29 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   iconEmoji: {
-    fontSize: 32,
+    fontSize: 48,
   },
   welcomeTitle: {
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 32,
     paddingHorizontal: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.65)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   welcomeDesc: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.92)',
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 19,
-    paddingHorizontal: 20,
+    paddingHorizontal: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.72)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   loggedInBadge: {
     marginTop: 12,
@@ -136,34 +148,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  illustrationCard: {
-    width: '90%',
-    alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    height: 160,
-    marginVertical: 18,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: '#C8E6C9',
-    elevation: 4,
-    shadowColor: '#15803D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
   actionSection: {
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 0,
   },
   primaryBtn: {
     backgroundColor: '#15803D',
-    height: 52,
-    borderRadius: 16,
+    height: 62,
+    borderRadius: 19,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -175,22 +167,22 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
   },
   secondaryBtn: {
     backgroundColor: '#FFFFFF',
-    height: 52,
-    borderRadius: 16,
+    height: 62,
+    borderRadius: 19,
     borderWidth: 1.5,
-    borderColor: '#15803D',
+    borderColor: '#86EFAC',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryBtnText: {
     color: '#15803D',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
   },
 });

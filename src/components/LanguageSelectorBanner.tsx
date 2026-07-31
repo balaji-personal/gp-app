@@ -4,11 +4,11 @@ import { Colors } from '../theme/colors';
 import { Globe } from 'lucide-react-native';
 import { useApp } from '../context/AppContext';
 
-export const LanguageSelectorBanner: React.FC = () => {
+export const LanguageSelectorBanner: React.FC<{ overlay?: boolean }> = ({ overlay = false }) => {
   const { lang, setLang } = useApp();
 
   return (
-    <View style={styles.bannerContainer}>
+    <View style={[styles.bannerContainer, overlay && styles.bannerContainerOverlay]}>
       <View style={styles.leftRow}>
         <View style={styles.globeIconCircle}>
           <Globe size={18} color="#EA580C" />
@@ -67,6 +67,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
+  },
+  bannerContainerOverlay: {
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    borderColor: 'rgba(255, 255, 255, 0.7)',
+    shadowOpacity: 0.12,
   },
   leftRow: {
     flexDirection: 'row',
