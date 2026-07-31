@@ -74,7 +74,6 @@ const heroImageStyle: ImageStyle = {
   opacity: 1,
   width: '150%',
   alignSelf: 'flex-end',
-  objectPosition: 'right center',
 };
 
 const styles = StyleSheet.create({
