@@ -183,6 +183,12 @@ export const RegisterScreen: React.FC = () => {
           description: pendingComplaint.description,
           hasPhoto: pendingComplaint.hasPhoto,
           voiceSeconds: pendingComplaint.hasVoice ? 12 : 0,
+          imageUri: pendingComplaint.imageUri,
+          imageName: pendingComplaint.imageName,
+          imageType: pendingComplaint.imageType,
+          voiceUri: pendingComplaint.voiceUri,
+          voiceName: pendingComplaint.voiceName,
+          voiceType: pendingComplaint.voiceType,
         });
         setPendingComplaint(null);
         resetStack('COMPLAINT_SUBMITTED');

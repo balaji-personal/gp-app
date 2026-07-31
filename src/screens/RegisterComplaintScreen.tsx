@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Platform } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Platform, Modal, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
 import { Colors } from '../theme/colors';
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/Header';
 import { LanguageSelectorBanner } from '../components/LanguageSelectorBanner';
+import { FeedbackModal } from '../components/FeedbackModal';
 import { Check, ArrowRight, Mic, Camera, Volume2, Trash2, Image as ImageIcon } from 'lucide-react-native';
 
 export const RegisterComplaintScreen: React.FC = () => {
@@ -15,6 +18,11 @@ export const RegisterComplaintScreen: React.FC = () => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [hasVoice, setHasVoice] = useState<boolean>(false);
   const [hasPhoto, setHasPhoto] = useState<boolean>(false);
+  const [imageAsset, setImageAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [voiceUri, setVoiceUri] = useState<string | undefined>();
+  const [mediaPickerVisible, setMediaPickerVisible] = useState(false);
+  const [feedback, setFeedback] = useState<{ success: boolean; title: string; message: string } | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   const categories = [
     { icon: '🛣️', label: t('catRoads'),      raw: 'Roads & Infrastructure',         bg: '#FAFAFA' },
@@ -52,17 +60,54 @@ export const RegisterComplaintScreen: React.FC = () => {
     }
   };
 
-  const handleToggleRecord = () => {
-    if (isRecording) {
+  const pickImageFromFiles = async () => {
+    setMediaPickerVisible(false);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setImageAsset(result.assets[0]);
+      setHasPhoto(true);
+    }
+  };
+
+  const takePhoto = async () => {
+    setMediaPickerVisible(false);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Camera permission required', 'Allow camera access to take a complaint photo.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 });
+    if (!result.canceled && result.assets[0]) {
+      setImageAsset(result.assets[0]);
+      setHasPhoto(true);
+    }
+  };
+
+  const handleToggleRecord = async () => {
+    if (isRecording && recordingRef.current) {
+      await recordingRef.current.stopAndUnloadAsync();
+      setVoiceUri(recordingRef.current.getURI() || undefined);
+      recordingRef.current = null;
       setIsRecording(false);
       setHasVoice(true);
-    } else {
-      setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        setHasVoice(true);
-      }, 3000);
+      return;
     }
+
+    const permission = await Audio.requestPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Microphone permission required', 'Allow microphone access to record your complaint.');
+      return;
+    }
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+    const recording = new Audio.Recording();
+    await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+    await recording.startAsync();
+    recordingRef.current = recording;
+    setIsRecording(true);
   };
 
   const handleStep1Continue = () => {
@@ -98,20 +143,44 @@ export const RegisterComplaintScreen: React.FC = () => {
       description: text || 'Village issue requiring Panchayat attention.',
       hasPhoto,
       hasVoice,
+      imageUri: imageAsset?.uri,
+      imageName: imageAsset?.fileName || undefined,
+      imageType: imageAsset?.mimeType,
+      voiceUri,
+      voiceName: voiceUri ? 'complaint-voice.m4a' : undefined,
+      voiceType: voiceUri ? 'audio/m4a' : undefined,
     };
 
     if (!isAuthenticated) {
       setPendingComplaint(complaintData);
       navigate('AUTH_PROMPT');
     } else {
-      await addComplaint({
+      const complaintId = await addComplaint({
         category: complaintData.category,
         description: complaintData.description,
         hasPhoto,
         voiceSeconds: hasVoice ? 12 : 0,
+        imageUri: imageAsset?.uri,
+        imageName: imageAsset?.fileName || undefined,
+        imageType: imageAsset?.mimeType,
+        voiceUri,
+        voiceName: voiceUri ? 'complaint-voice.m4a' : undefined,
+        voiceType: voiceUri ? 'audio/m4a' : undefined,
       });
+      if (!complaintId) {
+        setFeedback({
+          success: false,
+          title: 'Submission failed',
+          message: 'We could not save your complaint. Please check your connection and try again.',
+        });
+        return;
+      }
       setPendingComplaint(null);
-      navigate('COMPLAINT_SUBMITTED');
+      setFeedback({
+        success: true,
+        title: 'Complaint submitted',
+        message: `Your complaint ${complaintId} was saved successfully and sent to the Panchayat office.`,
+      });
     }
   };
 
@@ -210,7 +279,7 @@ export const RegisterComplaintScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[styles.smallPhotoBtn, hasPhoto && styles.smallPhotoBtnActive]}
                   activeOpacity={0.8}
-                  onPress={() => setHasPhoto(!hasPhoto)}
+                  onPress={() => setMediaPickerVisible(true)}
                 >
                   <ImageIcon size={20} color={hasPhoto ? '#15803D' : '#64748B'} />
                 </TouchableOpacity>
@@ -246,6 +315,16 @@ export const RegisterComplaintScreen: React.FC = () => {
                     </TouchableOpacity>
                   </View>
                 )}
+              </View>
+            )}
+
+            {imageAsset && (
+              <View style={styles.previewCard}>
+                <Image source={{ uri: imageAsset.uri }} style={styles.photoPreview} />
+                <View style={styles.previewInfo}>
+                  <Text style={styles.previewTitle}>Photo ready to upload</Text>
+                  <Text style={styles.previewSub}>{imageAsset.fileName || 'Complaint photo'}</Text>
+                </View>
               </View>
             )}
 
@@ -311,6 +390,38 @@ export const RegisterComplaintScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={mediaPickerVisible} transparent animationType="fade" onRequestClose={() => setMediaPickerVisible(false)}>
+        <View style={styles.mediaModalOverlay}>
+          <TouchableOpacity style={styles.mediaModalBackdrop} onPress={() => setMediaPickerVisible(false)} />
+          <View style={styles.mediaModalCard}>
+            <Text style={styles.mediaModalTitle}>Add a complaint photo</Text>
+            <TouchableOpacity style={styles.mediaOption} onPress={takePhoto}>
+              <Camera size={22} color="#15803D" />
+              <View><Text style={styles.mediaOptionTitle}>Take a photo</Text><Text style={styles.mediaOptionSub}>Use your camera</Text></View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mediaOption} onPress={pickImageFromFiles}>
+              <ImageIcon size={22} color="#2563EB" />
+              <View><Text style={styles.mediaOptionTitle}>Choose from files</Text><Text style={styles.mediaOptionSub}>Select an image from your device</Text></View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mediaCancelButton} onPress={() => setMediaPickerVisible(false)}>
+              <Text style={styles.mediaCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <FeedbackModal
+        visible={feedback !== null}
+        success={feedback?.success || false}
+        title={feedback?.title || ''}
+        message={feedback?.message || ''}
+        buttonLabel={feedback?.success ? 'View complaint' : 'Close'}
+        onClose={() => {
+          const wasSuccessful = feedback?.success;
+          setFeedback(null);
+          if (wasSuccessful) navigate('COMPLAINT_SUBMITTED');
+        }}
+      />
     </View>
   );
 };
@@ -439,6 +550,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#15803D',
   },
+  previewCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14,
+    padding: 8, marginTop: 10, borderWidth: 1, borderColor: '#BBF7D0',
+  },
+  photoPreview: { width: 58, height: 58, borderRadius: 10, backgroundColor: '#E2E8F0' },
+  previewInfo: { flex: 1, marginLeft: 10 },
+  previewTitle: { color: '#166534', fontSize: 13, fontWeight: '800' },
+  previewSub: { color: '#64748B', fontSize: 11, marginTop: 3 },
+  mediaModalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15, 23, 42, 0.48)' },
+  mediaModalBackdrop: { ...StyleSheet.absoluteFillObject },
+  mediaModalCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28 },
+  mediaModalTitle: { color: '#0F172A', fontSize: 18, fontWeight: '800', marginBottom: 12 },
+  mediaOption: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  mediaOptionTitle: { color: '#0F172A', fontSize: 15, fontWeight: '800' },
+  mediaOptionSub: { color: '#64748B', fontSize: 12, marginTop: 3 },
+  mediaCancelButton: { alignItems: 'center', paddingTop: 16 },
+  mediaCancelText: { color: '#DC2626', fontSize: 14, fontWeight: '800' },
   
   btnRow: { flexDirection: 'row', gap: 12, marginTop: 10 },
   backBtn: {

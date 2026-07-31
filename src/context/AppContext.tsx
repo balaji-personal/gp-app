@@ -41,6 +41,12 @@ export interface ComplaintRecord {
   villagerName?: string;
   villagerPhone?: string;
   location?: string;
+  imageUri?: string;
+  imageName?: string;
+  imageType?: string;
+  voiceUri?: string;
+  voiceName?: string;
+  voiceType?: string;
 }
 
 // Pending complaint data that gets saved during the 3-step flow
@@ -50,6 +56,12 @@ export interface PendingComplaint {
   description: string;
   hasPhoto: boolean;
   hasVoice: boolean;
+  imageUri?: string;
+  imageName?: string;
+  imageType?: string;
+  voiceUri?: string;
+  voiceName?: string;
+  voiceType?: string;
 }
 
 interface AppContextState {
@@ -253,6 +265,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const apiRes = await createComplaintApi({
           category: data.category || 'Roads & Infrastructure',
           description: data.description || 'Village issue requiring immediate Panchayat attention.',
+          imageUri: data.imageUri,
+          imageName: data.imageName,
+          imageType: data.imageType,
+          voiceUri: data.voiceUri,
+          voiceName: data.voiceName,
+          voiceType: data.voiceType,
           token: userSession?.token,
         });
         const assignedId = apiRes?.data?.complaintId || apiRes?.complaintId || apiRes?.data?.id || apiRes?.id;

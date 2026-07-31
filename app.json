@@ -4,7 +4,7 @@
     "slug": "grampanchayat-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/appicon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -14,13 +14,13 @@
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/appicon.png",
+        "backgroundImage": "./assets/appicon.png",
+        "monochromeImage": "./assets/appicon.png"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/appicon.png"
     },
     "extra": {
       "eas": {

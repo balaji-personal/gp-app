@@ -136,11 +136,17 @@ export async function registerUserApi(userData: {
 export async function createComplaintApi(complaintData: {
   category: string;
   description: string;
+  imageUri?: string;
+  imageName?: string;
+  imageType?: string;
+  voiceUri?: string;
+  voiceName?: string;
+  voiceType?: string;
   token?: string;
 }) {
   const url = `${API_BASE_URL}/complaints/register`;
   try {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {};
     if (complaintData.token) headers['Authorization'] = `Bearer ${complaintData.token}`;
 
     let catKey = complaintData.category.toUpperCase();
@@ -152,13 +158,28 @@ export async function createComplaintApi(complaintData: {
     else catKey = 'OTHER';
 
     console.log('[API] Creating complaint at:', url, { category: catKey });
+    const body = new FormData();
+    body.append('category', catKey);
+    body.append('description', complaintData.description);
+    if (complaintData.imageUri) {
+      body.append('images', {
+        uri: complaintData.imageUri,
+        name: complaintData.imageName || `complaint-image-${Date.now()}.jpg`,
+        type: complaintData.imageType || 'image/jpeg',
+      } as any);
+    }
+    if (complaintData.voiceUri) {
+      body.append('voice', {
+        uri: complaintData.voiceUri,
+        name: complaintData.voiceName || `complaint-voice-${Date.now()}.m4a`,
+        type: complaintData.voiceType || 'audio/m4a',
+      } as any);
+    }
+
     const res = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        category: catKey,
-        description: complaintData.description,
-      }),
+      body,
     });
     const data = await parseResponse(res, 'createComplaint');
     return data;
