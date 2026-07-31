@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  (Platform.OS === 'android' ? 'http://10.0.2.2:5000/api' : 'http://localhost:5000/api');
+  'https://gp-be-git-main-bal335957.vercel.app/api';
 
 console.log('[API Base URL]:', API_BASE_URL);
 
