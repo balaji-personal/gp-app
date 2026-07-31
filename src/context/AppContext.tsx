@@ -77,58 +77,11 @@ interface AppContextState {
 
 const AppContext = createContext<AppContextState | null>(null);
 
-const DEFAULT_COMPLAINTS: ComplaintRecord[] = [
-  {
-    id: 'GP-2026-0481',
-    category: 'Roads & Infrastructure',
-    description: 'Main road damage near Machnoor Gram Panchayat school gate. Large potholes causing difficulty for daily commuters.',
-    date: '28 Jul 2026',
-    status: 'Under Process',
-    hasPhoto: true,
-    voiceSeconds: 12,
-    officialRemarks: 'Complaint received. Field inspection scheduled by Panchayat Secretary K. Narsaiah.',
-    villagerName: 'B. Balaji',
-    villagerPhone: '9812345678',
-    location: 'Machnoor, Jharasangam, Sangareddy',
-  },
-  {
-    id: 'GP-2026-0399',
-    category: 'Water & Drainage',
-    description: 'Water pipeline leakage near South Street water tank. Drinking water is getting wasted.',
-    date: '21 Jul 2026',
-    status: 'Under Process',
-    hasPhoto: true,
-    voiceSeconds: 8,
-    officialRemarks: 'Pipe repair technician dispatched to site.',
-    villagerName: 'K. Ramesh',
-    villagerPhone: '9876500001',
-    location: 'Machnoor, Jharasangam, Sangareddy',
-  },
-  {
-    id: 'GP-2026-0312',
-    category: 'Sanitation & Cleanliness',
-    description: 'Garbage collection delayed in Ward 3 for 4 days. Need immediate cleaning.',
-    date: '10 Jul 2026',
-    status: 'Resolved',
-    hasPhoto: false,
-    officialRemarks: 'Sanitation crew deployed and site cleaned completely.',
-    villagerName: 'M. Lakshmi',
-    villagerPhone: '9876500002',
-    location: 'Machnoor, Jharasangam, Sangareddy',
-  },
-  {
-    id: 'GP-2026-0205',
-    category: 'Govt Services & Certificates',
-    description: 'Inquiry regarding Gram Sabha meeting agenda and street lighting approval.',
-    date: '28 Jun 2026',
-    status: 'Closed',
-    hasPhoto: false,
-    officialRemarks: 'Information provided to villager during Gram Panchayat session.',
-    villagerName: 'P. Mallaiah',
-    villagerPhone: '9876500003',
-    location: 'Machnoor, Jharasangam, Sangareddy',
-  },
-];
+function normalizeRole(role: unknown): UserSession['role'] {
+  const normalizedRole = String(role || 'VILLAGER').trim().toUpperCase();
+  if (normalizedRole === 'SARPANCH' || normalizedRole === 'ADMIN') return normalizedRole;
+  return 'VILLAGER';
+}
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [stack, setStack] = useState<{ screen: Screen; params: Record<string, any> }[]>([
@@ -137,8 +90,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [lang, setLangState] = useState<Language>('en');
   const [userSession, setUserSession] = useState<UserSession | null>(null);
-  const [complaints, setComplaints] = useState<ComplaintRecord[]>(DEFAULT_COMPLAINTS);
-  const [lastCreatedComplaintId, setLastCreatedComplaintId] = useState<string>('GP-2026-0481');
+  const [complaints, setComplaints] = useState<ComplaintRecord[]>([]);
+  const [lastCreatedComplaintId, setLastCreatedComplaintId] = useState<string>('');
   // Pending complaint saved before auth redirect
   const [pendingComplaint, setPendingComplaint] = useState<PendingComplaint | null>(null);
 
@@ -171,12 +124,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Map raw API complaint to our internal ComplaintRecord shape
   const mapApiComplaint = (c: any, session: UserSession | null): ComplaintRecord => ({
-    id: c.complaintId || c.id || `GP-2026-0${Math.floor(100 + Math.random() * 900)}`,
-    category: c.category,
-    description: c.description,
+    id: String(c.complaintId || c.id || ''),
+    category: c.category || '',
+    description: c.description || '',
     date: c.createdAt
       ? new Date(c.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-      : 'Today',
+      : '',
     status:
       c.status === 'UNDER_PROCESS'
         ? 'Under Process'
@@ -187,10 +140,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             : 'Submitted',
     hasPhoto: !!(c.imageUrls && c.imageUrls.length > 0),
     voiceSeconds: c.voiceUrl ? 12 : 0,
-    officialRemarks: c.officialRemarks || 'Under Panchayat review',
+    officialRemarks: c.officialRemarks || '',
     villagerName: c.villagerName || c.user?.fullName || session?.fullName || '',
     villagerPhone: c.villagerPhone || c.user?.phone || session?.phone || '',
-    location: c.location || 'Machnoor, Jharasangam, Sangareddy',
+    location: c.location || '',
   });
 
   useEffect(() => {
@@ -202,12 +155,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const apiRes = isSarpanch
           ? await fetchAllComplaintsApi(userSession.token)
           : await fetchMyComplaintsApi(userSession.token);
-        const raw: any[] = apiRes?.data || apiRes?.complaints || [];
-        if (Array.isArray(raw) && raw.length > 0) {
-          setComplaints(raw.map((c) => mapApiComplaint(c, userSession)));
-        }
+        const raw: any[] = Array.isArray(apiRes)
+          ? apiRes
+          : Array.isArray(apiRes?.data)
+            ? apiRes.data
+            : Array.isArray(apiRes?.data?.complaints)
+              ? apiRes.data.complaints
+              : Array.isArray(apiRes?.complaints)
+                ? apiRes.complaints
+                : [];
+        setComplaints(raw.map((c) => mapApiComplaint(c, userSession)));
       } catch {
-        // API offline — keep default/local data
+        setComplaints([]);
       }
     }
     loadApiComplaints();
@@ -229,17 +188,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       // This will THROW on wrong credentials — no silent fallback
       const apiRes = await loginUserApi(phone, pin);
+      const authData = apiRes?.data || apiRes;
+      const apiUser = authData?.user || apiRes?.user || {};
       const user: UserSession = {
-        id: apiRes.user?.id,
-        fullName: apiRes.user?.fullName || 'User',
-        fathersName: apiRes.user?.fathersName,
-        mothersName: apiRes.user?.mothersName,
-        phone: apiRes.user?.phone || phone,
-        role: (apiRes.user?.role || 'VILLAGER') as any,
-        district: apiRes.user?.district || 'Sangareddy',
-        mandal: apiRes.user?.mandal || 'Jharasangam',
-        village: apiRes.user?.village || apiRes.user?.gramPanchayat || 'Machnoor',
-        token: apiRes.token,
+        id: apiUser.id,
+        fullName: apiUser.fullName || 'User',
+        fathersName: apiUser.fathersName,
+        mothersName: apiUser.mothersName,
+        phone: apiUser.phone || phone,
+        role: normalizeRole(apiUser.role),
+        district: apiUser.district || 'Sangareddy',
+        mandal: apiUser.mandal || 'Jharasangam',
+        village: apiUser.village || apiUser.gramPanchayat || 'Machnoor',
+        token: authData?.token || apiRes?.token,
       };
       setUserSession(user);
       return { success: true, role: user.role };
@@ -267,7 +228,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         fathersName: apiRes.user?.fathersName || details.fathersName,
         mothersName: apiRes.user?.mothersName || details.mothersName,
         phone: apiRes.user?.phone || details.phone || '',
-        role: (apiRes.user?.role || 'VILLAGER') as any,
+        role: normalizeRole(apiRes.user?.role),
         district: details.district || 'Sangareddy',
         mandal: details.mandal || 'Jharasangam',
         village: details.village || 'Machnoor',
@@ -288,36 +249,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addComplaint = useCallback(
     async (data: Partial<ComplaintRecord>): Promise<string> => {
-      const randomId = `GP-2026-0${Math.floor(100 + Math.random() * 900)}`;
-      let assignedId = randomId;
       try {
         const apiRes = await createComplaintApi({
           category: data.category || 'Roads & Infrastructure',
           description: data.description || 'Village issue requiring immediate Panchayat attention.',
           token: userSession?.token,
         });
-        assignedId = apiRes?.data?.complaintId || randomId;
+        const assignedId = apiRes?.data?.complaintId || apiRes?.complaintId || apiRes?.data?.id || apiRes?.id;
+        if (!assignedId) return '';
+
+        const newRecord: ComplaintRecord = {
+          id: String(assignedId),
+          category: data.category || '',
+          description: data.description || '',
+          date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          status: 'Submitted',
+          hasPhoto: data.hasPhoto || false,
+          voiceSeconds: data.voiceSeconds || 0,
+          officialRemarks: '',
+          villagerName: userSession?.fullName || '',
+          villagerPhone: userSession?.phone || '',
+          location: userSession ? `${userSession.village}, ${userSession.mandal}, ${userSession.district}` : '',
+        };
+
+        setComplaints((prev) => [newRecord, ...prev]);
+        setLastCreatedComplaintId(String(assignedId));
+        return String(assignedId);
       } catch {
-        // Offline — use local random ID
+        return '';
       }
-
-      const newRecord: ComplaintRecord = {
-        id: assignedId,
-        category: data.category || 'Roads & Infrastructure',
-        description: data.description || 'Village issue requiring Panchayat attention.',
-        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        status: 'Submitted',
-        hasPhoto: data.hasPhoto || false,
-        voiceSeconds: data.voiceSeconds || 0,
-        officialRemarks: 'Complaint received by Gram Panchayat office.',
-        villagerName: userSession?.fullName || 'B. Balaji',
-        villagerPhone: userSession?.phone || '9812345678',
-        location: `${userSession?.village || 'Machnoor'}, ${userSession?.mandal || 'Jharasangam'}, ${userSession?.district || 'Sangareddy'}`,
-      };
-
-      setComplaints((prev) => [newRecord, ...prev]);
-      setLastCreatedComplaintId(assignedId);
-      return assignedId;
     },
     [userSession]
   );

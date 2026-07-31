@@ -1,14 +1,16 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Colors } from '../theme/colors';
 import { useApp } from '../context/AppContext';
 import { FileText, Home } from 'lucide-react-native';
+import QRCode from 'react-native-qrcode-svg';
 
 export const ComplaintSubmittedScreen: React.FC = () => {
   const { navigate, lastCreatedComplaintId, t } = useApp();
+  const complaintId = lastCreatedComplaintId || '-';
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
         <View style={styles.checkCircle}>
           <Text style={styles.checkIcon}>✅</Text>
@@ -20,7 +22,7 @@ export const ComplaintSubmittedScreen: React.FC = () => {
         <View style={styles.summaryCard}>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>{t('complaintId')}</Text>
-            <Text style={styles.rowValue}>{lastCreatedComplaintId || 'GP-2026-0481'}</Text>
+            <Text style={styles.rowValue}>{complaintId}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
@@ -30,13 +32,24 @@ export const ComplaintSubmittedScreen: React.FC = () => {
             </View>
           </View>
         </View>
+
+        <View style={styles.qrCard}>
+          <Text style={styles.qrTitle}>Scan to view complaint</Text>
+          <QRCode
+            value={`gram-panchayat://complaint/${complaintId}`}
+            size={160}
+            color={Colors.textPrimary}
+            backgroundColor="#FFFFFF"
+          />
+          <Text style={styles.qrHint}>Keep this QR code to quickly identify your complaint.</Text>
+        </View>
       </View>
 
       <View style={styles.actionContainer}>
         <TouchableOpacity
           style={styles.primaryBtn}
           activeOpacity={0.85}
-          onPress={() => navigate('COMPLAINT_DETAILS', { id: lastCreatedComplaintId })}
+          onPress={() => navigate('COMPLAINT_DETAILS', { id: complaintId })}
         >
           <FileText size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.primaryBtnText}>{t('viewComplaintBtn')}</Text>
@@ -51,16 +64,16 @@ export const ComplaintSubmittedScreen: React.FC = () => {
           <Text style={styles.secondaryBtnText}>{t('backToHomeBtn')}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: Colors.background,
     padding: 20,
     justifyContent: 'space-between',
+    flexGrow: 1,
   },
   content: {
     alignItems: 'center',
@@ -99,6 +112,28 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginTop: 24,
     elevation: 2,
+  },
+  qrCard: {
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginTop: 16,
+  },
+  qrTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    marginBottom: 14,
+  },
+  qrHint: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 12,
   },
   row: {
     flexDirection: 'row',

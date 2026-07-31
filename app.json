@@ -10,21 +10,21 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.marpally.grampanchayatapp",
+      "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false,
-      "package": "com.marpally.grampanchayatapp"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "62026b72-664a-40ec-8ebc-ee04acdb1b63"
+        "projectId": "199a8f15-ea0c-49c8-b353-f608f0da51ed"
       }
     }
   }

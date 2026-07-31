@@ -4,7 +4,7 @@ import { Colors } from '../theme/colors';
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/Header';
 import { fetchDistrictsApi, fetchMandalsApi, fetchGramPanchayatsApi } from '../services/api';
-import { ChevronDown, Check } from 'lucide-react-native';
+import { ChevronDown, Check, Search, X } from 'lucide-react-native';
 
 interface LocationItem {
   id: number;
@@ -34,7 +34,30 @@ export const RegisterScreen: React.FC = () => {
 
   // Modal selector states
   const [modalType, setModalType] = useState<'DISTRICT' | 'MANDAL' | 'GP' | null>(null);
+  const [locationSearch, setLocationSearch] = useState('');
   const [loadingLocations, setLoadingLocations] = useState(false);
+
+  const locationOptions = modalType === 'DISTRICT' ? districts : modalType === 'MANDAL' ? mandals : gramPanchayats;
+  const normalizedSearch = locationSearch.trim().toLowerCase();
+  const filteredLocationOptions = normalizedSearch.length < 2
+    ? locationOptions
+    : locationOptions
+      .filter((item) => item.name.toLowerCase().includes(normalizedSearch))
+      .sort((first, second) => {
+        const firstStartsWith = first.name.toLowerCase().startsWith(normalizedSearch);
+        const secondStartsWith = second.name.toLowerCase().startsWith(normalizedSearch);
+        return Number(secondStartsWith) - Number(firstStartsWith);
+      });
+
+  const openLocationModal = (type: 'DISTRICT' | 'MANDAL' | 'GP') => {
+    setLocationSearch('');
+    setModalType(type);
+  };
+
+  const closeLocationModal = () => {
+    setLocationSearch('');
+    setModalType(null);
+  };
 
   // Load initial Districts from API
   useEffect(() => {
@@ -256,7 +279,7 @@ export const RegisterScreen: React.FC = () => {
           <Text style={styles.label}>{t('districtLabel')} *</Text>
           <TouchableOpacity
             style={styles.dropdownBtn}
-            onPress={() => setModalType('DISTRICT')}
+            onPress={() => openLocationModal('DISTRICT')}
             activeOpacity={0.8}
           >
             <Text style={styles.dropdownBtnText}>{selectedDistrict?.name || t('selectDistrict')}</Text>
@@ -268,7 +291,7 @@ export const RegisterScreen: React.FC = () => {
           <Text style={styles.label}>{t('mandalLabel')} *</Text>
           <TouchableOpacity
             style={styles.dropdownBtn}
-            onPress={() => setModalType('MANDAL')}
+            onPress={() => openLocationModal('MANDAL')}
             activeOpacity={0.8}
           >
             <Text style={styles.dropdownBtnText}>{selectedMandal?.name || t('selectMandal')}</Text>
@@ -280,7 +303,7 @@ export const RegisterScreen: React.FC = () => {
           <Text style={styles.label}>{t('gramPanchayatLabel')} *</Text>
           <TouchableOpacity
             style={styles.dropdownBtn}
-            onPress={() => setModalType('GP')}
+            onPress={() => openLocationModal('GP')}
             activeOpacity={0.8}
           >
             <Text style={styles.dropdownBtnText}>{selectedGP?.name || t('selectGramPanchayat')}</Text>
@@ -306,7 +329,12 @@ export const RegisterScreen: React.FC = () => {
 
       {/* Modal Picker for Location Selection */}
       <Modal visible={modalType !== null} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalType(null)}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={closeLocationModal}
+          />
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>
               {modalType === 'DISTRICT'
@@ -316,8 +344,27 @@ export const RegisterScreen: React.FC = () => {
                 : t('selectGramPanchayat')}
             </Text>
 
-            <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
-              {(modalType === 'DISTRICT' ? districts : modalType === 'MANDAL' ? mandals : gramPanchayats).map((item) => {
+            <View style={styles.searchInputWrap}>
+              <Search size={18} color={Colors.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by name"
+                placeholderTextColor={Colors.textMuted}
+                value={locationSearch}
+                onChangeText={setLocationSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              {locationSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setLocationSearch('')} hitSlop={8}>
+                  <X size={18} color={Colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <ScrollView style={styles.modalOptionsList} showsVerticalScrollIndicator={false}>
+              {filteredLocationOptions.map((item) => {
                 const isSelected =
                   (modalType === 'DISTRICT' && selectedDistrict.id === item.id) ||
                   (modalType === 'MANDAL' && selectedMandal.id === item.id) ||
@@ -331,7 +378,7 @@ export const RegisterScreen: React.FC = () => {
                       if (modalType === 'DISTRICT') setSelectedDistrict(item);
                       if (modalType === 'MANDAL') setSelectedMandal(item);
                       if (modalType === 'GP') setSelectedGP(item);
-                      setModalType(null);
+                      closeLocationModal();
                     }}
                   >
                     <Text style={[styles.modalOptionText, isSelected && styles.modalOptionTextSelected]}>
@@ -341,9 +388,12 @@ export const RegisterScreen: React.FC = () => {
                   </TouchableOpacity>
                 );
               })}
+              {filteredLocationOptions.length === 0 && (
+                <Text style={styles.noResultsText}>No matching locations found</Text>
+              )}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -377,10 +427,24 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', padding: 24,
   },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject },
   modalCard: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 20, elevation: 6,
+    width: '100%', backgroundColor: Colors.surface, borderRadius: 20, padding: 20, elevation: 6,
   },
   modalTitle: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary, marginBottom: 12 },
+  searchInputWrap: {
+    height: 48, borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, marginBottom: 10,
+  },
+  searchInput: {
+    flex: 1, height: '100%', borderWidth: 0, outlineWidth: 0,
+    fontSize: 15, color: Colors.textPrimary, paddingHorizontal: 8,
+  },
+  modalOptionsList: { maxHeight: 260, width: '100%' },
+  noResultsText: {
+    color: Colors.textMuted, fontSize: 14, textAlign: 'center', paddingVertical: 20,
+  },
   modalOption: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border,
