@@ -9,13 +9,13 @@ import { MapPin, Phone, Pencil, KeyRound, LogOut } from 'lucide-react-native';
 export const ProfileScreen: React.FC = () => {
   const { userSession, logoutUser, t, back } = useApp();
 
-  const name = userSession?.fullName || 'B. Balaji';
-  const father = userSession?.fathersName || 'B. Ramesh';
-  const mother = userSession?.mothersName || 'B. Lakshmi';
-  const phone = userSession?.phone || '9812345678';
-  const district = userSession?.district || 'Sangareddy';
-  const mandal = userSession?.mandal || 'Jharasangam';
-  const village = userSession?.village || 'Machnoor';
+  const name = userSession?.fullName || '';
+  const father = userSession?.fathersName || '';
+  const mother = userSession?.mothersName || '';
+  const phone = userSession?.phone || '';
+  const district = userSession?.district || '';
+  const mandal = userSession?.mandal || '';
+  const village = userSession?.village || '';
 
   return (
     <View style={styles.container}>

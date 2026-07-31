@@ -26,6 +26,10 @@ export interface UserSession {
   district: string;
   mandal: string;
   village: string;
+  gramPanchayatId?: number;
+  mandalId?: number;
+  districtId?: number;
+  state?: string;
   token?: string;
 }
 
@@ -204,14 +208,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const apiUser = authData?.user || apiRes?.user || {};
       const user: UserSession = {
         id: apiUser.id,
-        fullName: apiUser.fullName || 'User',
+        fullName: apiUser.fullName || '',
         fathersName: apiUser.fathersName,
         mothersName: apiUser.mothersName,
         phone: apiUser.phone || phone,
         role: normalizeRole(apiUser.role),
-        district: apiUser.district || 'Sangareddy',
-        mandal: apiUser.mandal || 'Jharasangam',
-        village: apiUser.village || apiUser.gramPanchayat || 'Machnoor',
+        district: apiUser.districtName || apiUser.district || '',
+        mandal: apiUser.mandalName || apiUser.mandal || '',
+        village: apiUser.gramPanchayatName || apiUser.village || apiUser.gramPanchayat || '',
+        gramPanchayatId: apiUser.gramPanchayatId,
+        mandalId: apiUser.mandalId,
+        districtId: apiUser.districtId,
+        state: apiUser.stateName || apiUser.state || '',
         token: authData?.token || apiRes?.token,
       };
       setUserSession(user);
@@ -234,17 +242,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         mandalId: details.mandalId || 1,
         gramPanchayatId: details.gramPanchayatId || 1,
       });
+      const authData = apiRes?.data || apiRes;
+      const apiUser = authData?.user || apiRes?.user || {};
       const user: UserSession = {
-        id: apiRes.user?.id,
-        fullName: apiRes.user?.fullName || details.fullName || '',
-        fathersName: apiRes.user?.fathersName || details.fathersName,
-        mothersName: apiRes.user?.mothersName || details.mothersName,
-        phone: apiRes.user?.phone || details.phone || '',
-        role: normalizeRole(apiRes.user?.role),
-        district: details.district || 'Sangareddy',
-        mandal: details.mandal || 'Jharasangam',
-        village: details.village || 'Machnoor',
-        token: apiRes.token,
+        id: apiUser.id,
+        fullName: apiUser.fullName || details.fullName || '',
+        fathersName: apiUser.fathersName || details.fathersName,
+        mothersName: apiUser.mothersName || details.mothersName,
+        phone: apiUser.phone || details.phone || '',
+        role: normalizeRole(apiUser.role),
+        district: apiUser.districtName || apiUser.district || details.district || '',
+        mandal: apiUser.mandalName || apiUser.mandal || details.mandal || '',
+        village: apiUser.gramPanchayatName || apiUser.village || apiUser.gramPanchayat || details.village || '',
+        gramPanchayatId: apiUser.gramPanchayatId || details.gramPanchayatId,
+        mandalId: apiUser.mandalId || details.mandalId,
+        districtId: apiUser.districtId || details.districtId,
+        state: apiUser.stateName || apiUser.state || '',
+        token: authData?.token || apiRes?.token,
       };
       setUserSession(user);
       return { success: true };
